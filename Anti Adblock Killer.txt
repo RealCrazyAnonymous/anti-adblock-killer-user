@@ -1,0 +1,176 @@
+[Adblock Plus 2.0]
+! Title: Anti-Adblock Killer
+! Description: Complements the anti-adblock-killer.user.js userscript by blocking anti-adblock scripts, hiding overlays, and neutralizing detection baits.
+! Version: 1.0.0
+! Expires: 4 days
+! Homepage: https://github.com/RealCrazyAnonymous/anti-adblock-killer-user
+! License: MIT
+! Last modified: 2026-11-01
+
+! ============================================================
+! SECTION 1: BLOCK NETWORK REQUESTS TO KNOWN ANTI-ADBLOCK SCRIPTS
+! ============================================================
+! These rules prevent the browser from downloading the JavaScript files
+! that perform ad‑blocker detection. They are the first line of defence.
+
+! --- Generic anti-adblock libraries ---
+||antiblock.org^$third-party
+||blockadblock.com^$third-party
+||fuckadblock.js^$third-party
+||adblockdetector.com^$third-party
+||adblock-check.com^$third-party
+||detectadblock.com^$third-party
+||adblocknotify.com^$third-party
+||stopadblock.org^$third-party
+||addefender.com^$third-party
+||trymask.com^$third-party
+
+! --- Common path patterns for anti-adblock scripts ---
+/anti-adblock/*$script,third-party
+/antiadblock/*$script,third-party
+/block-adblock/*$script,third-party
+/detect-adblock/*$script,third-party
+/adblock-detector/*$script,third-party
+/adblock-warning/*$script,third-party
+
+! --- Site‑specific examples (extend as needed) ---
+||example.com/js/anti-adblock.js$script
+||example.com/ads/detect.js$script
+||example.com/blocker-check.js$script
+
+! ============================================================
+! SECTION 2: COSMETIC FILTERS – HIDE OVERLAYS, MODALS, AND WARNINGS
+! ============================================================
+! Element‑hiding rules remove the visual anti‑adblock messages and
+! unlock the page. Generic selectors are listed first, followed by
+! domain‑specific examples.
+
+! --- Generic selectors for common anti-adblock overlays ---
+##.adblock-notice
+##.adblock-warning
+##.adblock-popup
+##.adblock-overlay
+##.adblock-detected
+##.anti-adblock
+##.anti-adblock-message
+##.anti-adblock-modal
+##.adblock-modal
+##.adblock-message
+##.adblocker-warning
+##.adblocker-notice
+##.adblocker-popup
+##.adblocker-overlay
+##[id*="adblock"]
+##[class*="adblock"]
+##[id*="anti-adblock"]
+##[class*="anti-adblock"]
+
+! --- Common structural wrappers used by anti-adblock walls ---
+##.modal-backdrop.adblock
+##.overlay.adblock
+##.popup-wrapper.adblock
+##.notice.adblock
+
+! --- Site‑specific examples ---
+example.com##.adblock-notice
+example.com##.adblock-overlay
+example.com###adblock-modal
+example.com##.anti-adblock-wrapper
+
+! ============================================================
+! SECTION 3: EXCEPTION RULES – ALLOW BAIT ELEMENTS / SCRIPTS
+! ============================================================
+! Anti‑adblock scripts often check for the presence of a “bait” element
+! (e.g., a div with class “adsbox” or a script named “show_ads.js”).
+! If the bait is missing, the site concludes an ad blocker is active.
+! Exception rules allow these specific baits to load so the check passes.
+
+! --- Allow common bait scripts ---
+@@||example.com/js/show_ads.js$script
+@@||example.com/ads/bait.js$script
+@@||example.com/ads.js$script
+
+! --- Allow bait HTML elements (so they are not hidden by cosmetic filters) ---
+example.com#@#.adsbox
+example.com#@#.ad-banner
+example.com#@#.ad-slot
+example.com#@#div[id="ad-bait"]
+
+! --- Generic exceptions for ubiquitous bait class names ---
+#@#.adsbox
+#@#.ad-banner
+#@#.ad-slot
+
+! ============================================================
+! SECTION 4: SCRIPTLET INJECTION – NEUTRALIZE DETECTION LOGIC
+! ============================================================
+! Scriptlets are small JavaScript snippets injected by uBlock Origin
+! (and compatible blockers) to patch page‑side anti‑adblock checks.
+! The syntax is:  domain##+js(scriptlet-name, argument1, argument2)
+! These rules require uBlock Origin or a blocker that supports scriptlets.
+
+! --- Override common global variables used for detection ---
+example.com##+js(set, adsbygoogle, [])
+example.com##+js(set, adBlockDetected, false)
+example.com##+js(set, canRunAds, true)
+example.com##+js(set, showAds, true)
+example.com##+js(set, adblock, false)
+example.com##+js(set, isAdBlockActive, false)
+
+! --- Neutralize session/local storage flags ---
+example.com##+js(set-session-storage-item, adblock_shown, false)
+example.com##+js(set-local-storage-item, adblock_detected, false)
+
+! --- Generic scriptlet rules that work on many sites ---
+##+js(set, Object.prototype.adBlocksFound, false)
+##+js(set, Object.prototype.hasAllowedInstreamAd, true)
+
+! --- YouTube‑style anti‑adblock (example) ---
+youtube.com##+js(set, yt.config_.openPopupConfig.supportedPopups.adBlockMessageViewModel, false)
+youtube.com##+js(set, Object.prototype.adBlocksFound, false)
+
+! --- Remove “nag” cookies / storage that trigger repeated warnings ---
+example.com##+js(remove-cookie, adblock_warning)
+example.com##+js(remove-cookie, anti_adblock)
+
+! ============================================================
+! SECTION 5: $REPLACE RULES – PATCH ANTI‑ADBLOCK RESPONSES
+! ============================================================
+! The $replace modifier (supported by uBlock Origin 1.53+ and AdGuard)
+! can rewrite the body of a response. Use it to strip detection code
+! from HTML or JavaScript responses when blocking the whole file would
+! break the site.
+
+! --- Example: remove anti‑adblock snippet from an HTML response ---
+||example.com^$replace=/<script[^>]*anti-adblock[^>]*>.*?<\/script>//g
+
+! --- Example: neutralize a specific detection variable in a JS file ---
+||example.com/detect.js$replace=/adBlockDetected\s*=\s*true/adBlockDetected = false/g
+
+! --- Example: remove a “wall” div from the HTML before it renders ---
+||example.com^$replace=/<div[^>]*class="[^"]*adblock-wall[^"]*"[^>]*>.*?<\/div>//g
+
+! ============================================================
+! SECTION 6: POPUP AND REDIRECT BLOCKING
+! ============================================================
+! Some anti‑adblock systems open pop‑ups or redirect users to a
+! “disable your blocker” page. These rules block those behaviours.
+
+||example.com/popup/adblock^$popup
+||example.com/redirect/blocker^$document
+||adblock-check.com^$popup,third-party
+
+! ============================================================
+! SECTION 7: MISCELLANEOUS – ANNOYANCE REDUCTION
+! ============================================================
+! Optional rules that reduce related annoyances (cookie walls,
+! newsletter modals, etc.) that often accompany anti‑adblock flows.
+
+##.cookie-wall
+##.newsletter-modal
+##.paywall-overlay
+##.consent-banner.adblock
+
+! ============================================================
+! END OF LIST
+! ============================================================
