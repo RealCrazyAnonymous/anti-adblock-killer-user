@@ -1,5 +1,5 @@
 [Adblock Plus 2.0]
-! Title: Anti-Adblock Killer
+! Title: Anti AdBlock Killer
 ! Description: Complements the anti-adblock-killer.user.js userscript by blocking anti-adblock scripts, hiding overlays, and neutralizing detection baits.
 ! Version: 1.0.0
 ! Expires: 4 days
